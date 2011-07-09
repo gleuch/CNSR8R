@@ -1,0 +1,32 @@
+h1. CNSR8R (Censorator)
+
+_*Hide your friends, hide your parents, because (otherwise) everyone is going to see who you're screenshotting.*_
+
+Select images and blocks of text to cover up (read: your mom) before capturing that perfectly hilarious screenshot you'll be posting on Tumblr.
+
+
+
+h3. Credit
+
+By "Greg Leuch":http://gleuch.com, in participation with the "Free Art & Technology Lab":http://fffff.at.
+
+Props to "Chris Menning":http://buzzfeed.com/chrismenning for expressing enough interest to get me to code these extensions.
+
+Released 11 July 2011, under MIT License for noncommercial development. http://fffff.at/chinablocker
+
+
+
+h3. Changelog
+
+h5. Chrome Extension
+* *Version 1.0 (11 Jul 2011)*
+** _In development._
+
+h5. Firefox Extension
+* _Coming soon!__
+
+h5. Safari Extension
+* _Coming soon!__
+
+h5. Bookmarklet
+* _Coming soon!__
