@@ -6,7 +6,7 @@ Select images and blocks of text to cover up (read: your mom) before capturing t
 
 
 
-h3. Credit
+h2. Credit
 
 By "Greg Leuch":http://gleuch.com, in participation with the "Free Art & Technology Lab":http://fffff.at.
 
@@ -16,17 +16,17 @@ Released 11 July 2011, under MIT License for noncommercial development. http://f
 
 
 
-h3. Changelog
+h2. Changelog
 
-h5. Chrome Extension
+h3. Chrome Extension
 * *Version 1.0 (11 Jul 2011)*
 ** _In development._
 
-h5. Firefox Extension
+h3. Firefox Extension
 * _Coming soon!__
 
-h5. Safari Extension
+h3. Safari Extension
 * _Coming soon!__
 
-h5. Bookmarklet
+h3. Bookmarklet
 * _Coming soon!__
