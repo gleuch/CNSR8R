@@ -15,13 +15,17 @@ var CNSR8R = {
   censor : function(info) {
     try {
       // Find selected text & hide it...
-      if (info['selectionText']) CNSR8R.select_and_hide(info['selectionText']);
+      if (info['selectionText']) {
+        CNSR8R.select_and_hide(info['selectionText']);
 
       // Find image & hide it...
-      if (info['mediaType'] == 'image') CNSR8R.find_and_hide('img', 'src', info['srcUrl']);
+      } else if (info['mediaType'] == 'image') {
+        CNSR8R.find_and_hide('img', 'src', info['srcUrl']);
 
       // Find link & hide it...
-      if (info['linkUrl']) CNSR8R.find_and_hide('a', 'href', info['linkUrl']);
+      } else if (info['linkUrl']) {
+        CNSR8R.find_and_hide('a', 'href', info['linkUrl']);
+      }
 
     } catch(e) {console.error('CSR8R Error: '+ e);}
   },
@@ -45,7 +49,48 @@ var CNSR8R = {
   },
 
   select_and_hide : function(text) {
-    // THIS IS TRICKY SINCE IT COULD BE IN MULTIPLE ELEMENTS! :|
+    var userSelection;
+
+    if (window.getSelection) {
+      userSelection = window.getSelection();
+      var range = userSelection.getRangeAt(0);
+
+      console.error(userSelection)
+
+      var baseNode = userSelection.baseNode.parentElement,
+          str = text, nodes;
+
+      // If contains child nodes
+      if (userSelection.baseNode.parentNode.childElementCount > 0) {
+        userSelection.extentNode.parentElement.cnsr8r = true;
+        userSelection.focusNode.parentElement.cnsr8r = true;
+        baseNode = baseNode.parentNode;
+        nodes = baseNode.childNodes;
+
+        for(var i in nodes) {
+          if (nodes[i].nodeType) {
+
+            //
+            // TODO!!!
+            //
+
+
+            // alert(nodes[i].nodeValue +' ?== '+ (nodes[i].cnsr8r ? 'YES' : 'NO'));
+          }
+        }
+
+      // Is just a single html or text node
+      } else {
+        var r = userSelection.toString(),
+            h = userSelection.anchorNode.parentNode.innerHTML,
+            s = h.slice(0, userSelection.anchorOffset),
+            e = h.slice(userSelection.anchorOffset + r.length),
+            x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$');
+            m = h.replace(x, '$1<span class="_CNSR8R" style="background: #000; color: #000;">$2</span>$3');
+
+        userSelection.baseNode.parentNode.innerHTML = m;
+      }
+    }
   },
 
   find_and_hide : function(tag, attr, val) {
@@ -64,3 +109,9 @@ var CNSR8R = {
     
   }
 };
+
+RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?.,\\\/^$|#\s]/g, "\\$&");};
+
+function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i); s=s.join(", "); if(a){return s}else{alert(s)}}
+// function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+typeof(o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
+// function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+(typeof(o[i])=='object' ? "\n"+d(o[i],(a?a:'')+'  '):o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
