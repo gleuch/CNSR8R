@@ -47,7 +47,7 @@ var Censorator = function() {
   this.page.click = function(info, tab) {
     if (info['srcUrl'] || info['selectionText']) {
       if (this.debug) chrome.tabs.executeScript(tab.id, {file: 'js/cnsr8r.js'}, function() {});
-      alert(jQuery.toJSON(info));
+      // alert(jQuery.toJSON(info));
       chrome.tabs.executeScript(tab.id, {code : "if (typeof(CNSR8R) != 'undefined') CNSR8R.censor("+ jQuery.toJSON(info) +");"}, function(){});
       _gaq.push(['_trackPageview', '/censored/chrome']);
     }

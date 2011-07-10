@@ -61,7 +61,8 @@ var CNSR8R = {
           str = text, nodes;
 
       // If contains child nodes
-      if (userSelection.baseNode.parentNode.childElementCount > 0) {
+      if (userSelection.baseNode !== userSelection.extentNode) {
+        alert('not')
         userSelection.extentNode.parentElement.cnsr8r = true;
         userSelection.focusNode.parentElement.cnsr8r = true;
         baseNode = baseNode.parentNode;
@@ -82,13 +83,22 @@ var CNSR8R = {
       // Is just a single html or text node
       } else {
         var r = userSelection.toString(),
-            h = userSelection.anchorNode.parentNode.innerHTML,
+            h = userSelection.baseNode.nodeValue,
             s = h.slice(0, userSelection.anchorOffset),
             e = h.slice(userSelection.anchorOffset + r.length),
-            x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$');
-            m = h.replace(x, '$1<span class="_CNSR8R" style="background: #000; color: #000;">$2</span>$3');
+            x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$'),
+            m = h.replace(x, '$2'),
+            d = document.createElement('span');
 
-        userSelection.baseNode.parentNode.innerHTML = m;
+        d.innerHTML = m;
+        d.style.color = '#000';
+        d.style.backgroundColor = '#000';
+        d.className = '_CNSR8R';
+
+        if (s != '') userSelection.baseNode.parentNode.insertBefore(document.createTextNode(s), userSelection.baseNode);
+        userSelection.baseNode.parentNode.insertBefore(d, userSelection.baseNode);
+        if (e != '') userSelection.baseNode.parentNode.insertBefore(document.createTextNode(e), userSelection.baseNode);
+        userSelection.baseNode.parentNode.removeChild(userSelection.baseNode);
       }
     }
   },
