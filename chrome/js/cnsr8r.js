@@ -12,6 +12,8 @@
 
 */
 var CNSR8R = {
+  replaced_nodes : [],
+
   censor : function(info) {
     try {
       // Find selected text & hide it...
@@ -49,58 +51,137 @@ var CNSR8R = {
   },
 
   select_and_hide : function(text) {
-    var userSelection;
-
     if (window.getSelection) {
-      userSelection = window.getSelection();
-      var range = userSelection.getRangeAt(0);
+      var sel = window.getSelection();
 
-      console.error(userSelection)
-
-      var baseNode = userSelection.baseNode.parentElement,
+      var baseNode = sel.baseNode.parentElement,
           str = text, nodes;
 
       // If contains child nodes
-      if (userSelection.baseNode !== userSelection.extentNode) {
-        alert('not')
-        userSelection.extentNode.parentElement.cnsr8r = true;
-        userSelection.focusNode.parentElement.cnsr8r = true;
-        baseNode = baseNode.parentNode;
-        nodes = baseNode.childNodes;
+      if (sel.anchorNode !== sel.focusNode) {
+        var str = sel.toString(), ap = sel.anchorNode;
 
-        for(var i in nodes) {
-          if (nodes[i].nodeType) {
+        dance:
+        while (ap !== document) {
+          var fp = sel.focusNode;
+          while (fp !== document) {
+            if (ap === fp) break dance;
+            fp = fp.parentNode;
+          }
+          ap = ap.parentNode;
+        }
+        
+        if (ap === fp) {
+          var o = {anchor : false, focus : false}, m = false;
 
-            //
-            // TODO!!!
-            //
 
+          for (var i in ap.childNodes) {
+            if (typeof(ap.childNodes[i]) == 'undefined') continue; // skip
+            if (!o.anchor && !o.focus) o = CNSR8R.matches_children(sel, ap.childNodes[i], o); // do we start
 
-            // alert(nodes[i].nodeValue +' ?== '+ (nodes[i].cnsr8r ? 'YES' : 'NO'));
+            if (!!o.anchor || !!o.focus) { // if started, censor it
+              m = CNSR8R.censor_elements(sel, ap.childNodes[i], m);
+              o = CNSR8R.matches_children(sel, ap.childNodes[i], o);
+            }
+
+            if (!!o.anchor && !!o.focus) break; // if end, then stop
           }
         }
 
       // Is just a single html or text node
       } else {
-        var r = userSelection.toString(),
-            h = userSelection.baseNode.nodeValue,
-            s = h.slice(0, userSelection.anchorOffset),
-            e = h.slice(userSelection.anchorOffset + r.length),
-            x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$'),
-            m = h.replace(x, '$2'),
-            d = document.createElement('span');
+        var p = (sel.anchorOffset < sel.focusOffset ? sel.anchorOffset : sel.focusOffset); // user can go L->R or R->L w/ selection
+        CNSR8R.censor_element(sel.focusNode, sel.toString(), p);
+      }
 
-        d.innerHTML = m;
-        d.style.color = '#000';
-        d.style.backgroundColor = '#000';
-        d.className = '_CNSR8R';
+      CNSR8R.replace_elements();
+    }
+  },
 
-        if (s != '') userSelection.baseNode.parentNode.insertBefore(document.createTextNode(s), userSelection.baseNode);
-        userSelection.baseNode.parentNode.insertBefore(d, userSelection.baseNode);
-        if (e != '') userSelection.baseNode.parentNode.insertBefore(document.createTextNode(e), userSelection.baseNode);
-        userSelection.baseNode.parentNode.removeChild(userSelection.baseNode);
+  replace_elements : function() {
+    for (var i in CNSR8R.replaced_nodes) {
+      var o = CNSR8R.replaced_nodes[i];
+      if (o.n) {
+        if (o.s && o.s != '') o.n.parentNode.insertBefore(document.createTextNode(o.s), o.n);
+        o.n.parentNode.insertBefore(o.d, o.n);
+        if (o.e && o.e != '') o.n.parentNode.insertBefore(document.createTextNode(o.e), o.n);
+        o.n.parentNode.removeChild(o.n);
       }
     }
+
+    CNSR8R.replaced_nodes = [];
+  },
+
+  // Inside single element
+  censor_element : function(node, r, p) {
+    if (!r) r = node.nodeValue;
+    if (!p) p = r.length;
+
+    var h = node.nodeValue,
+        s = h.slice(0, p),
+        e = h.slice(p + r.length),
+        d = document.createElement('span');
+
+    d.style.color = '#000';
+    d.style.backgroundColor = '#000';
+    d.className = '_CNSR8R';
+
+    if (r === h) {
+      d.innerHTML = r;
+      CNSR8R.replaced_nodes.push({n:node,d:d});
+    } else {
+      var x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$'),
+          m = h.replace(x, '$2');
+      if (h === m) return false;
+      d.innerHTML = m;
+      CNSR8R.replaced_nodes.push({n:node,d:d,s:s,e:e});
+    }
+  },
+
+  // Recursive
+  censor_elements : function(sel, node, m) {
+    if (typeof(node.nodeType) == 'undefined') return m;
+
+    if (!m) m = {start : false, finish : false};
+
+    if (node.childNodes && node.childNodes.length > 0) {
+      for (var i in node.childNodes) m = CNSR8R.censor_elements(sel, node.childNodes[i], m);
+    } else {
+      if (node === sel.anchorNode || node == sel.focusNode) {
+        var s = node.nodeValue.intersection(sel.toString());
+
+        if (!!m.start) {
+          m.finish = true;
+          if (s.length > 0) CNSR8R.censor_element(node, s[0], 0);
+        } else {
+          m.start = true;
+          if (s.length > 0) CNSR8R.censor_element(node, s[0], node.nodeValue.length - s[0].length);
+        }
+      } else if (!!m.start && !!!m.finish) {
+        CNSR8R.censor_element(node);
+      }
+    }
+    
+    return m;
+  },
+
+  matches_children : function(sel, node, o) {
+    if (!o) o = {anchor : false, focus : false};
+
+    if (!o.anchor && node === sel.anchorNode) {
+      return {anchor : true, focus : o.focus};
+    } else if (!o.focus && node === sel.focusNode) {
+      return {anchor : o.anchor, focus : true};
+
+    } else if (node.childNodes && node.childNodes.length > 0) {
+      var r;
+      for (var i in node.childNodes) {
+        r = CNSR8R.matches_children(sel, node.childNodes[i], o);
+        if (r !== o) return r;
+      }
+    }
+
+    return o;
   },
 
   find_and_hide : function(tag, attr, val) {
@@ -120,8 +201,44 @@ var CNSR8R = {
   }
 };
 
-RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?.,\\\/^$|#\s]/g, "\\$&");};
+RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?!.,\\\/^$|#\s]/g, "\\$&");};
 
 function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i); s=s.join(", "); if(a){return s}else{alert(s)}}
 // function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+typeof(o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
 // function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+(typeof(o[i])=='object' ? "\n"+d(o[i],(a?a:'')+'  '):o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
+
+
+
+// based on http://stackoverflow.com/questions/2250942/javascript-string-matching-pattern-help/2251027#2251027
+String.prototype.intersection = function(a) {
+  var g = createGrid(this.length, a.length),
+      f = 0,
+      str = null;
+
+  for (var i = 0; i < this.length; i++) {
+    for (var j = 0; j < a.length; j++) {
+      if (this.charAt(i) == a.charAt(j)) {
+        g[i][j] = (i == 0 || j == 0) ? 1 : (g[i-1][j-1] + 1);
+
+        if (g[i][j] > f) {
+          f = g[i][j];
+          str = null;
+        }
+
+        if (g[i][j] == f) str = this.slice(i-f+1, i+1);
+      }
+    }
+  }
+  return str;
+}
+
+function createGrid(rows, columns) {
+  var grid = new Array(rows);
+  for(var i = 0; i < rows; i++) {
+    grid[i] = new Array(columns);
+    for(var j = 0; j < columns; j++) {
+      grid[i][j] = 0;
+    }
+  }
+  return grid;
+}
