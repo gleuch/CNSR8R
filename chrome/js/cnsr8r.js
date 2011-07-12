@@ -32,16 +32,16 @@ var CNSR8R = {
     } catch(e) {console.error('CSR8R Error: '+ e);}
   },
 
+  get_color : function(el) {
+    var c;
+    while (!c && el !== document) {
+      if (el && el.style) c = el.style.color;
+      el = el.parentNode;
+    }
+  },
+
   hide_element : function(el) {
-    var p_el = el, c = p_el.style.color;
-
-    try {
-      while (p_el !== document) {
-        p_el = p_el.parentNode;
-        if (p_el && p_el.style) c = p_el.style.color;
-      }
-    } catch(e) {}
-
+    var c = CNSR8R.get_color(el);
     if (!c || c == '') c = '#000';
 
     if (el.tagName == 'IMG') el.src = chrome.extension.getURL('icons/blank.png');
@@ -114,24 +114,26 @@ var CNSR8R = {
 
   // Inside single element
   censor_element : function(node, r, p) {
-    if (!r) r = node.nodeValue;
-    if (!p) p = r.length;
+    if (typeof(r) == 'undefined') r = node.nodeValue;
+    if (typeof(p) == 'undefined') p = r.length;
 
     var h = node.nodeValue,
         s = h.slice(0, p),
         e = h.slice(p + r.length),
-        d = document.createElement('span');
+        d = document.createElement('span'),
+        c = CNSR8R.get_color(node);
 
-    d.style.color = '#000';
-    d.style.backgroundColor = '#000';
+    if (!c || c == '') c = '#000';
+    d.style.color = c; d.style.backgroundColor = c;
     d.className = '_CNSR8R';
 
     if (r === h) {
       d.innerHTML = r;
       CNSR8R.replaced_nodes.push({n:node,d:d});
     } else {
-      var x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$'),
+      var x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$', 'm'),
           m = h.replace(x, '$2');
+
       if (h === m) return false;
       d.innerHTML = m;
       CNSR8R.replaced_nodes.push({n:node,d:d,s:s,e:e});
@@ -152,10 +154,10 @@ var CNSR8R = {
 
         if (!!m.start) {
           m.finish = true;
-          if (s.length > 0) CNSR8R.censor_element(node, s[0], 0);
+          if (s) CNSR8R.censor_element(node, s, 0);
         } else {
           m.start = true;
-          if (s.length > 0) CNSR8R.censor_element(node, s[0], node.nodeValue.length - s[0].length);
+          if (s) CNSR8R.censor_element(node, s, node.nodeValue.length - s.length);
         }
       } else if (!!m.start && !!!m.finish) {
         CNSR8R.censor_element(node);
@@ -201,7 +203,7 @@ var CNSR8R = {
   }
 };
 
-RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?!.,\\\/^$|#\s]/g, "\\$&");};
+RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?!.,\\\/^$|#\s]/mg, "\\$&");};
 
 function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i); s=s.join(", "); if(a){return s}else{alert(s)}}
 // function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+typeof(o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
