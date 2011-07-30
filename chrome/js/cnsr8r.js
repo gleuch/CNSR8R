@@ -1,7 +1,7 @@
 /*
 
   Censorator
-  by Greg Leuch ... @gleuch ... http://gleu.cj
+  by Greg Leuch ... @gleuch ... http://gleu.ch
 
 
   Code released under MIT License for NON-COMMERCIAL development.
@@ -9,8 +9,8 @@
 
   ####################################################################################
 
-
 */
+
 var CNSR8R = {
   replaced_nodes : [],
 
@@ -70,13 +70,15 @@ var CNSR8R = {
           }
           ap = ap.parentNode;
         }
-        
+
         if (ap === fp) {
           var o = {anchor : false, focus : false}, m = false;
 
 
           for (var i in ap.childNodes) {
             if (typeof(ap.childNodes[i]) == 'undefined') continue; // skip
+            if (ap.childNodes[i].nodeName == 'BR') continue; // skip
+
             if (!o.anchor && !o.focus) o = CNSR8R.matches_children(sel, ap.childNodes[i], o); // do we start
 
             if (!!o.anchor || !!o.focus) { // if started, censor it
@@ -117,11 +119,12 @@ var CNSR8R = {
     if (typeof(r) == 'undefined') r = node.nodeValue;
     if (typeof(p) == 'undefined') p = r.length;
 
-    var h = node.nodeValue,
+    var h = node.nodeValue.pretty(),
         s = h.slice(0, p),
         e = h.slice(p + r.length),
         d = document.createElement('span'),
-        c = CNSR8R.get_color(node);
+        c = CNSR8R.get_color(node),
+        v = '';
 
     if (!c || c == '') c = '#000';
     d.style.color = c; d.style.backgroundColor = c;
@@ -131,8 +134,11 @@ var CNSR8R = {
       d.innerHTML = r;
       CNSR8R.replaced_nodes.push({n:node,d:d});
     } else {
-      var x = RegExp('^('+ RegExp.escape(s) +')('+ RegExp.escape(r) +')('+ RegExp.escape(e) +')$', 'm'),
-          m = h.replace(x, '$2');
+      if (s && s != '') v += '^('+ RegExp.escape(s) +')';
+      v += '('+ RegExp.escape(r) +')';
+      if (e && e != '') v += '('+ RegExp.escape(e) +')$'
+
+      var x = RegExp(v, 'm'), m = h.replace(x, (s && s != '' ? '$2' : '$1') );
 
       if (h === m) return false;
       d.innerHTML = m;
@@ -150,7 +156,7 @@ var CNSR8R = {
       for (var i in node.childNodes) m = CNSR8R.censor_elements(sel, node.childNodes[i], m);
     } else {
       if (node === sel.anchorNode || node == sel.focusNode) {
-        var s = node.nodeValue.intersection(sel.toString());
+        var s = node.nodeValue.pretty().intersection(sel.toString().pretty());
 
         if (!!m.start) {
           m.finish = true;
@@ -203,13 +209,14 @@ var CNSR8R = {
   }
 };
 
-RegExp.escape = function(text) {return text.replace(/[-[\]{}()*+?!.,\\\/^$|#\s]/mg, "\\$&");};
+RegExp.escape = function(text) {return text.replace(/[\-\[\]\{\}\(\)\*\+\?\!\.\,\\\/\^\$\|\#\s]/mg, "\\$&");};
 
 function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i); s=s.join(", "); if(a){return s}else{alert(s)}}
 // function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+typeof(o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
 // function d(o,a) {var s=[];for (var i in o)s.push((a?a:'')+i+" = "+(typeof(o[i])=='object' ? "\n"+d(o[i],(a?a:'')+'  '):o[i])); s=s.join("\n"); if(a){return s}else{alert(s)}}
 
 
+String.prototype.pretty = function() {return this.replace(/[\r\n\t]/mg, ' ');}
 
 // based on http://stackoverflow.com/questions/2250942/javascript-string-matching-pattern-help/2251027#2251027
 String.prototype.intersection = function(a) {
